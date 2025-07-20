@@ -1,0 +1,29 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+theta = mat['theta'][0] 
+
+def plot_pattern_linear(true, pred, theta, normalize=True):
+ 
+    true = true.numpy() if torch.is_tensor(true) else np.array(true)
+    pred = pred.numpy() if torch.is_tensor(pred) else np.array(pred)
+
+   
+    if normalize:
+        true = true / np.max(true)
+        pred = pred / np.max(pred)
+
+
+    plt.plot(theta, true, label='True')
+    plt.plot(theta, pred, label='Predicted')
+    plt.xlabel("Angle (°)")
+    plt.ylabel("Gain (Linear)")
+    plt.grid(True)
+    plt.legend()
+    plt.title("Beampattern Comparison (Linear Gain)")
+    plt.show()
+
+sample_input, true_output = test_set[0]
+pred_output = model(sample_input.unsqueeze(0)).squeeze().detach()
+
+plot_pattern_linear(true_output, pred_output, theta)
