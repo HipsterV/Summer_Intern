@@ -1,0 +1,22 @@
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
+
+for epoch in range(100):
+    model.train()
+    total_loss = 0
+    for xb, yb in train_loader:
+        optimizer.zero_grad()
+        pred = model(xb)
+        loss = criterion(pred, yb)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+    avg_loss = total_loss / len(train_loader)
+    scheduler.step(avg_loss)
+    print(f"Epoch {epoch+1}, Loss: {avg_loss:.4f}")
+
+    model.eval()
+with torch.no_grad():
+    test_loss = sum(criterion(model(x), y).item() for x, y in test_loader) / len(test_loader)
+print(f"Test MSE (dB): {test_loss:.4f}")
