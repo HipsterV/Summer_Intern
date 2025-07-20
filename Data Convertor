@@ -1,0 +1,49 @@
+import scipy.io
+import numpy as np
+import torch
+from sklearn.preprocessing import StandardScaler
+
+# Load the .mat file
+mat = scipy.io.loadmat('dataset_v1.mat')
+
+# Read data correctly
+X_geom_mat = mat['X_geom']          # shape (1000, 1)
+Y_pattern = mat['Y_pattern']        # shape (1000, 181)
+Constraints = mat['Constraints']    # shape (1000, 2)
+
+# Function to flatten and pad geometry
+def pad_geom(geom_mat, max_points=8):
+    padded = []
+    for i in range(geom_mat.shape[0]):
+        geom = geom_mat[i, 0]
+        g = np.array(geom)
+        if g.ndim == 1:
+            g = g.reshape(-1, 2)
+
+        if g.shape[0] > max_points:
+            g = g[:max_points]
+        elif g.shape[0] < max_points:
+            g = np.pad(g, ((0, max_points - g.shape[0]), (0, 0)), mode='constant')
+
+        padded.append(g.flatten())
+    return np.array(padded)
+
+# Apply padding
+X = pad_geom(X_geom_mat)
+
+
+scaler_X = StandardScaler().fit(X)
+scaler_C = StandardScaler().fit(Constraints)
+
+X_scaled = scaler_X.transform(X)
+C_scaled = scaler_C.transform(Constraints)
+
+
+X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
+C_tensor = torch.tensor(C_scaled, dtype=torch.float32)
+Y_tensor = torch.tensor(Y_pattern, dtype=torch.float32)
+
+# Print to verify shapes
+print("X_tensor:", X_tensor.shape)
+print("C_tensor:", C_tensor.shape)
+print("Y_tensor:", Y_tensor.shape)
