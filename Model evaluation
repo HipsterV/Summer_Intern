@@ -1,0 +1,4 @@
+model.eval()
+with torch.no_grad():
+    test_loss = sum(criterion(model(x), y).item() for x, y in test_loader) / len(test_loader)
+print(f"Test MSE (dB): {test_loss:.4f}")
