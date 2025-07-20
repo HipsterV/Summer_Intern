@@ -1,0 +1,66 @@
+% Parameters
+num_samples = 1000;      
+num_elements = 8;          
+theta = linspace(-90, 90, 181);  
+
+% Output containers
+X_geom = cell(num_samples, 16);
+Y_pattern = zeros(num_samples, length(theta));
+Constraints = zeros(num_samples, 2);  % [mainlobe_angle, null_angle]
+
+for i = 1:num_samples
+   
+    geom = 0.5 * rand(num_elements, 2);  % X-Y coords within 0-0.5 lambda
+    X_geom{i} = geom;
+
+    
+    mainlobe_angle = randi([-60, 60]);  % Mainlobe direction
+    null_angle = randi([-80, 80]);      % Null direction
+    while abs(null_angle - mainlobe_angle) < 15
+        null_angle = randi([-80, 80]);
+    end
+    Constraints(i, :) = [mainlobe_angle, null_angle];
+
+    
+    w = optimize_weights(geom, theta, mainlobe_angle, null_angle);
+
+
+    af = array_factor(geom, w, theta);
+    Y_pattern(i, :) = abs(af);  % remove log scale
+end
+
+
+save('dataset_v1.mat', 'X_geom', 'Y_pattern', 'Constraints', 'theta','-v7');
+
+function w = optimize_weights(geom, theta, main_angle, null_angle)
+    N = size(geom,1);
+    k = 2 * pi;  % Assume lambda = 1
+    d = zeros(length(theta), N);
+
+    for i = 1:length(theta)
+        angle_rad = deg2rad(theta(i));
+        steering_vector = exp(1j * k * (geom(:,1)*cos(angle_rad) + geom(:,2)*sin(angle_rad)));
+        d(i,:) = steering_vector.';
+    end
+
+ 
+    desired = zeros(size(theta));
+    [~, idx_main] = min(abs(theta - main_angle));
+    desired(idx_main) = 1;
+    [~, idx_null] = min(abs(theta - null_angle));
+    desired(idx_null) = 0;
+
+    % Solve least squares
+    w = pinv(d) * desired.';
+end
+
+function af = array_factor(geom, weights, theta)
+    k = 2 * pi;  % Assume lambda = 1
+    af = zeros(size(theta));
+
+    for i = 1:length(theta)
+        angle_rad = deg2rad(theta(i));
+        steering_vector = exp(1j * k * (geom(:,1)*cos(angle_rad) + geom(:,2)*sin(angle_rad)));
+        af(i) = weights' * steering_vector;
+    end
+end
